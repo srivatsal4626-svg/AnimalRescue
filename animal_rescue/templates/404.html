@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}Page Not Found - Animal Rescue{% endblock %}
+
+{% block content %}
+<div class="container py-5 my-5 text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6 py-5 bg-white rounded-5 shadow-sm border">
+            <i class="bi bi-compass text-warning mb-3 d-block" style="font-size: 6rem;"></i>
+            <h1 class="display-1 fw-bold text-dark mb-0">404</h1>
+            <h3 class="mb-4 text-muted fw-bold">Woops! Seems you're lost.</h3>
+            <p class="lead mb-5 px-md-4 text-muted">The page you're looking for was not found, has been moved, or
+                doesn't exist. Let's get you back on track to saving animals.</p>
+            <a href="{{ url_for('index') }}"
+                class="btn btn-primary-custom btn-lg px-5 py-3 rounded-pill fw-bold shadow"><i
+                    class="bi bi-house-door-fill me-2"></i> Back to Homepage</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

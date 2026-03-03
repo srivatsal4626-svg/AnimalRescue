@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Report Animal - Animal Rescue{% endblock %}
+
+{% block content %}
+<div class="container py-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-7">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header border-0 text-white text-center py-5 rounded-top-4"
+                    style="background-color: var(--primary-color);">
+                    <i class="bi bi-exclamation-triangle-fill fs-1 text-warning mb-2 d-block"></i>
+                    <h2 class="mb-0 fw-bold">Report an Animal in Need</h2>
+                    <p class="mb-0 mt-2 text-white-50 fs-5">Your quick action can save a life today.</p>
+                </div>
+                <div class="card-body p-4 p-md-5 bg-white">
+                    <form action="{{ url_for('report') }}" method="POST">
+                        <div class="mb-4">
+                            <label for="animal_type" class="form-label fw-bold text-dark">Type of Animal <span
+                                    class="text-danger">*</span></label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-bug"></i></span>
+                                <input type="text" class="form-control form-control-lg border-start-0 ps-0"
+                                    id="animal_type" name="animal_type" placeholder="e.g., Stray Dog, Injured Bird, Cat"
+                                    required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="location" class="form-label fw-bold text-dark">Approximate Location <span
+                                    class="text-danger">*</span></label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light border-end-0"><i
+                                        class="bi bi-geo-alt"></i></span>
+                                <input type="text" class="form-control form-control-lg border-start-0 ps-0"
+                                    id="location" name="location" placeholder="Street name, landmark, city" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-bold text-dark">Situation Description <span
+                                    class="text-danger">*</span></label>
+                            <textarea class="form-control form-control-lg" id="description" name="description" rows="4"
+                                placeholder="Describe the animal's condition and exact whereabouts" required></textarea>
+                            <div class="form-text">Please provide as much detail as possible to help our team locate the
+                                animal quickly.</div>
+                        </div>
+
+                        <div class="mb-5">
+                            <label for="contact" class="form-label fw-bold text-dark">Your Contact Number <span
+                                    class="text-danger">*</span></label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light border-end-0"><i
+                                        class="bi bi-telephone"></i></span>
+                                <input type="tel" class="form-control form-control-lg border-start-0 ps-0" id="contact"
+                                    name="contact" placeholder="We might call you for location details" required>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 text-center mt-2">
+                            <button type="submit" class="btn btn-primary-custom btn-lg py-3 fs-5">Submit Emergency
+                                Report <i class="bi bi-send-fill ms-2"></i></button>
+                        </div>
+
+                        <div class="alert alert-light mt-4 mb-0 text-center border">
+                            <i class="bi bi-info-circle-fill text-primary"></i> For immediate medical emergencies where
+                            the animal is critically injured, please call our 24/7 hotline directly:
+                            <strong>1-800-RESCUE-NOW</strong>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

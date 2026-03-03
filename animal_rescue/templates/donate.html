@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Donate - Animal Rescue{% endblock %}
+
+{% block content %}
+<div class="container py-5 mb-5">
+    <div class="row align-items-center g-5">
+        <div class="col-lg-6">
+            <h1 class="display-4 fw-bold" style="color: var(--primary-color);">Make a Difference Today</h1>
+            <div style="width: 80px; height: 5px; background-color: var(--secondary-color); margin: 20px 0 30px;"></div>
+            <p class="lead mb-4">Your generous donation helps us provide food, shelter, and medical care for rescued
+                animals. Every contribution, big or small, saves lives.</p>
+
+            <div
+                class="d-flex align-items-center mb-4 p-3 bg-white rounded-4 shadow-sm border-start border-5 border-warning">
+                <div style="width: 50px;" class="text-center"><i class="bi bi-cup-hot-fill fs-2 text-warning"></i></div>
+                <div class="ms-3">
+                    <h5 class="fw-bold mb-1 text-dark">Provides Meals</h5>
+                    <p class="text-muted mb-0">$10 can feed a rescued dog for a week.</p>
+                </div>
+            </div>
+
+            <div
+                class="d-flex align-items-center mb-4 p-3 bg-white rounded-4 shadow-sm border-start border-5 border-success">
+                <div style="width: 50px;" class="text-center"><i class="bi bi-capsule-pill fs-2 text-success"></i></div>
+                <div class="ms-3">
+                    <h5 class="fw-bold mb-1 text-dark">Medical Care</h5>
+                    <p class="text-muted mb-0">$50 provides necessary vaccines and checkups.</p>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center p-3 bg-white rounded-4 shadow-sm border-start border-5 border-info">
+                <div style="width: 50px;" class="text-center"><i class="bi bi-house-door-fill fs-2 text-info"></i></div>
+                <div class="ms-3">
+                    <h5 class="fw-bold mb-1 text-dark">Safe Shelter</h5>
+                    <p class="text-muted mb-0">$100 sponsors an animal's entire stay until adoption.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden mt-4 mt-lg-0">
+                <div class="card-header border-0 text-white text-center py-4"
+                    style="background-color: var(--primary-color);">
+                    <i class="bi bi-heart-pulse-fill fs-1 text-danger mb-2 d-block"></i>
+                    <h3 class="mb-0 fw-bold">Donation Form</h3>
+                </div>
+                <div class="card-body p-4 p-md-5 bg-white">
+                    <form action="{{ url_for('donate') }}" method="POST">
+                        <div class="mb-4">
+                            <label for="donor_name" class="form-label fw-bold text-dark fs-5">Full Name <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg bg-light" id="donor_name"
+                                name="donor_name" placeholder="Enter your full name" required>
+                        </div>
+
+                        <div class="mb-5">
+                            <label for="amount" class="form-label fw-bold text-dark fs-5">Donation Amount (USD) <span
+                                    class="text-danger">*</span></label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-success text-white border-success fw-bold"><i
+                                        class="bi bi-currency-dollar"></i></span>
+                                <input type="number" step="0.01" min="1"
+                                    class="form-control form-control-lg border-success" id="amount" name="amount"
+                                    placeholder="50.00" required>
+                            </div>
+                            <div class="form-text mt-3"><i class="bi bi-shield-lock-fill text-success me-1"></i> Secure
+                                payment processing. No credit card information is stored on our servers.</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary-custom btn-lg py-3 fs-4 fw-bold w-100"><i
+                                    class="bi bi-cash-coin me-2"></i> Donate Now</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

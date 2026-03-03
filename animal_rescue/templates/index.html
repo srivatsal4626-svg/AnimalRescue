@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 bg-dark bg-opacity-50 p-5 rounded-4 shadow">
+                <h1 class="display-3">Saving Lives, One Paw at a Time</h1>
+                <p>Join our mission to rescue, rehabilitate, and rehome animals in need.</p>
+                <div class="mt-4">
+                    <a href="{{ url_for('adopt') }}" class="btn btn-primary-custom btn-lg me-sm-3 mb-3 mb-sm-0">Adopt a
+                        Pet</a>
+                    <a href="{{ url_for('donate') }}" class="btn btn-outline-custom btn-lg">Donate Now</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="py-5 bg-light" style="margin-top: -50px; position: relative; z-index: 10;">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="stats-box h-100">
+                    <div class="stats-number">{{ rescued_count }}</div>
+                    <h4 class="mt-2 text-muted fw-bold">Animals Rescued</h4>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-box h-100">
+                    <div class="stats-number">{{ adopted_count }}</div>
+                    <h4 class="mt-2 text-muted fw-bold">Happy Adoptions</h4>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-box h-100">
+                    <div class="stats-number">${{ "%.0f"|format(total_donations) }}</div>
+                    <h4 class="mt-2 text-muted fw-bold">Total Donations</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Recent Rescues Section -->
+<section class="py-5 mt-4 mb-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold display-5" style="color: var(--primary-color);">Animals Looking For Home</h2>
+            <div style="width: 80px; height: 4px; background-color: var(--secondary-color); margin: 15px auto;"></div>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            {% for animal in animals %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                        class="card-img-top" alt="Animal Rescue" style="height: 250px; object-fit: cover;">
+                    <div class="card-body d-flex flex-column text-center">
+                        <h4 class="card-title fw-bold text-dark">{{ animal.animal_type }}</h4>
+                        <p class="card-text text-muted mb-3 fs-5"><i class="bi bi-geo-alt-fill text-danger"></i> {{
+                            animal.location }}</p>
+                        <p class="card-text mb-4">{{ animal['description'][:80] }}...</p>
+
+                        <div class="mt-auto">
+                            <span
+                                class="badge w-50 py-2 fs-6 mb-3 rounded-pill bg-{{ 'warning text-dark' if animal.status == 'pending' else 'success' }}">
+                                {{ animal.status|capitalize }}
+                            </span>
+                            <br>
+                            <a href="{{ url_for('adopt') }}" class="btn btn-primary-custom w-100">Help This Animal</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-emoji-smile fs-1 text-muted mb-3 d-block"></i>
+                <p class="lead text-muted">No animals looking for a home right now! Thank you to our wonderful
+                    community.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-5 pt-3">
+            <a href="{{ url_for('adopt') }}" class="btn btn-outline-custom text-dark px-5 py-3 fs-5"
+                style="border-color: var(--primary-color);">View All Rescue Cases <i class="bi bi-arrow-right"></i></a>
+        </div>
+    </div>
+</section>
+{% endblock %}
