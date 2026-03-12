@@ -4,9 +4,12 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_change_in_production'
-DATABASE = '/tmp/database.db'
+DATABASE = 'database.db'
 
 
+# ---------------------------
+# Database Connection
+# ---------------------------
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -22,6 +25,9 @@ def close_connection(exception):
         db.close()
 
 
+# ---------------------------
+# Initialize Database
+# ---------------------------
 def init_db():
     db = sqlite3.connect(DATABASE)
     cursor = db.cursor()
@@ -49,11 +55,13 @@ def init_db():
     db.close()
 
 
-# Initialize database
 with app.app_context():
     init_db()
 
 
+# ---------------------------
+# Home Page
+# ---------------------------
 @app.route('/')
 def index():
     db = get_db()
@@ -83,9 +91,13 @@ def index():
     )
 
 
+# ---------------------------
+# Report Animal
+# ---------------------------
 @app.route('/report', methods=['GET', 'POST'])
 def report():
     if request.method == 'POST':
+
         animal_type = request.form['animal_type']
         location = request.form['location']
         description = request.form['description']
@@ -104,6 +116,9 @@ def report():
     return render_template('report.html')
 
 
+# ---------------------------
+# Adopt Page
+# ---------------------------
 @app.route('/adopt')
 def adopt():
     db = get_db()
@@ -122,9 +137,13 @@ def adopt():
     return render_template('adopt.html', animals=animals, search_query=search_query)
 
 
+# ---------------------------
+# Adopt Action
+# ---------------------------
 @app.route('/adopt_action/<int:animal_id>', methods=['POST'])
 def adopt_action(animal_id):
     db = get_db()
+
     db.execute('UPDATE reports SET status="adopted" WHERE id=?', (animal_id,))
     db.commit()
 
@@ -132,8 +151,12 @@ def adopt_action(animal_id):
     return redirect(url_for('adopt'))
 
 
+# ---------------------------
+# Donate
+# ---------------------------
 @app.route('/donate', methods=['GET', 'POST'])
 def donate():
+
     if request.method == 'POST':
         donor_name = request.form['donor_name']
         amount = request.form['amount']
@@ -157,9 +180,12 @@ def donate():
     return render_template('donate.html')
 
 
-# LOGIN ROUTE (Modified: anyone can login)
+# ---------------------------
+# LOGIN (ANY USERNAME WORKS)
+# ---------------------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+
     if request.method == 'POST':
         username = request.form['username']
 
@@ -172,6 +198,9 @@ def login():
     return render_template('login.html')
 
 
+# ---------------------------
+# Logout
+# ---------------------------
 @app.route('/logout')
 def logout():
     session.clear()
@@ -179,8 +208,12 @@ def logout():
     return redirect(url_for('login'))
 
 
+# ---------------------------
+# Admin Dashboard
+# ---------------------------
 @app.route('/admin')
 def admin():
+
     if 'admin_logged_in' not in session:
         return redirect(url_for('login'))
 
@@ -197,8 +230,12 @@ def admin():
     return render_template('admin.html', reports=reports, donations=donations)
 
 
+# ---------------------------
+# Delete Report
+# ---------------------------
 @app.route('/admin/delete_report/<int:report_id>', methods=['POST'])
 def delete_report(report_id):
+
     if 'admin_logged_in' not in session:
         abort(403)
 
@@ -210,14 +247,19 @@ def delete_report(report_id):
     return redirect(url_for('admin'))
 
 
+# ---------------------------
+# Update Status
+# ---------------------------
 @app.route('/admin/update_status/<int:report_id>', methods=['POST'])
 def update_status(report_id):
+
     if 'admin_logged_in' not in session:
         abort(403)
 
     new_status = request.form.get('status')
 
     if new_status in ['pending', 'rescued', 'adopted']:
+
         db = get_db()
         db.execute(
             'UPDATE reports SET status=? WHERE id=?',
@@ -230,10 +272,16 @@ def update_status(report_id):
     return redirect(url_for('admin'))
 
 
+# ---------------------------
+# 404 Page
+# ---------------------------
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
 
 
+# ---------------------------
+# Run App
+# ---------------------------
 if __name__ == '__main__':
     app.run(debug=True)
