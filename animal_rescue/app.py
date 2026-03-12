@@ -50,9 +50,17 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL
+            password TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'user'
         )
     ''')
+
+    # Ensure there is at least one admin account
+    cursor.execute('SELECT * FROM users WHERE username=?', ('admin',))
+    if not cursor.fetchone():
+        hashed_pw = generate_password_hash('admin123')
+        cursor.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+                       ('admin', hashed_pw, 'admin'))
 
     db.commit()
     db.close()
@@ -179,7 +187,7 @@ def register():
             return redirect(url_for('register'))
 
         hashed_pw = generate_password_hash(password)
-        db.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, hashed_pw))
+        db.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', (username, hashed_pw, 'user'))
         db.commit()
 
         flash('Registration successful! You can now log in.', 'success')
@@ -200,8 +208,12 @@ def login():
         if user and check_password_hash(user['password'], password):
             session['user_logged_in'] = True
             session['username'] = username
+            session['role'] = user['role']
             flash('Logged in successfully!', 'success')
-            return redirect(url_for('index'))
+            if user['role'] == 'admin':
+                return redirect(url_for('admin'))
+            else:
+                return redirect(url_for('index'))
 
         flash('Invalid username or password', 'danger')
 
@@ -212,8 +224,60 @@ def login():
 def logout():
     session.pop('user_logged_in', None)
     session.pop('username', None)
+    session.pop('role', None)
     flash('Logged out successfully.', 'success')
     return redirect(url_for('login'))
+
+
+@app.route('/admin')
+def admin():
+    if 'user_logged_in' not in session or session.get('role') != 'admin':
+        abort(403)
+
+    db = get_db()
+
+    reports = db.execute(
+        'SELECT * FROM reports ORDER BY id DESC'
+    ).fetchall()
+
+    donations = db.execute(
+        'SELECT * FROM donations ORDER BY id DESC'
+    ).fetchall()
+
+    return render_template('admin.html', reports=reports, donations=donations)
+
+
+@app.route('/admin/delete_report/<int:report_id>', methods=['POST'])
+def delete_report(report_id):
+    if 'user_logged_in' not in session or session.get('role') != 'admin':
+        abort(403)
+
+    db = get_db()
+    db.execute('DELETE FROM reports WHERE id=?', (report_id,))
+    db.commit()
+
+    flash('Report deleted.', 'success')
+    return redirect(url_for('admin'))
+
+
+@app.route('/admin/update_status/<int:report_id>', methods=['POST'])
+def update_status(report_id):
+    if 'user_logged_in' not in session or session.get('role') != 'admin':
+        abort(403)
+
+    new_status = request.form.get('status')
+
+    if new_status in ['pending', 'rescued', 'adopted']:
+        db = get_db()
+        db.execute(
+            'UPDATE reports SET status=? WHERE id=?',
+            (new_status, report_id)
+        )
+        db.commit()
+
+        flash('Status updated.', 'success')
+
+    return redirect(url_for('admin'))
 
 
 @app.errorhandler(404)
