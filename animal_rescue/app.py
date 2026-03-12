@@ -47,20 +47,17 @@ def init_db():
     ''')
 
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
+        CREATE TABLE IF NOT EXISTS admin (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'user'
+            username TEXT NOT NULL,
+            password TEXT NOT NULL
         )
     ''')
 
-    # Ensure there is at least one admin account
-    cursor.execute('SELECT * FROM users WHERE username=?', ('admin',))
+    cursor.execute('SELECT * FROM admin WHERE username = ?', ('admin',))
     if not cursor.fetchone():
         hashed_pw = generate_password_hash('admin123')
-        cursor.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-                       ('admin', hashed_pw, 'admin'))
+        cursor.execute('INSERT INTO admin (username, password) VALUES (?, ?)', ('admin', hashed_pw))
 
     db.commit()
     db.close()
@@ -174,28 +171,6 @@ def donate():
     return render_template('donate.html')
 
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-
-        db = get_db()
-        existing_user = db.execute('SELECT * FROM users WHERE username=?', (username,)).fetchone()
-        if existing_user:
-            flash('Username already exists. Please choose another.', 'danger')
-            return redirect(url_for('register'))
-
-        hashed_pw = generate_password_hash(password)
-        db.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', (username, hashed_pw, 'user'))
-        db.commit()
-
-        flash('Registration successful! You can now log in.', 'success')
-        return redirect(url_for('login'))
-
-    return render_template('register.html')
-
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -203,17 +178,15 @@ def login():
         password = request.form['password']
 
         db = get_db()
-        user = db.execute('SELECT * FROM users WHERE username=?', (username,)).fetchone()
+        admin = db.execute(
+            'SELECT * FROM admin WHERE username=?',
+            (username,)
+        ).fetchone()
 
-        if user and check_password_hash(user['password'], password):
-            session['user_logged_in'] = True
-            session['username'] = username
-            session['role'] = user['role']
+        if admin and check_password_hash(admin['password'], password):
+            session['admin_logged_in'] = True
             flash('Logged in successfully!', 'success')
-            if user['role'] == 'admin':
-                return redirect(url_for('admin'))
-            else:
-                return redirect(url_for('index'))
+            return redirect(url_for('admin'))
 
         flash('Invalid username or password', 'danger')
 
@@ -222,17 +195,15 @@ def login():
 
 @app.route('/logout')
 def logout():
-    session.pop('user_logged_in', None)
-    session.pop('username', None)
-    session.pop('role', None)
+    session.pop('admin_logged_in', None)
     flash('Logged out successfully.', 'success')
     return redirect(url_for('login'))
 
 
 @app.route('/admin')
 def admin():
-    if 'user_logged_in' not in session or session.get('role') != 'admin':
-        abort(403)
+    if 'admin_logged_in' not in session:
+        return redirect(url_for('login'))
 
     db = get_db()
 
@@ -249,7 +220,7 @@ def admin():
 
 @app.route('/admin/delete_report/<int:report_id>', methods=['POST'])
 def delete_report(report_id):
-    if 'user_logged_in' not in session or session.get('role') != 'admin':
+    if 'admin_logged_in' not in session:
         abort(403)
 
     db = get_db()
@@ -262,7 +233,7 @@ def delete_report(report_id):
 
 @app.route('/admin/update_status/<int:report_id>', methods=['POST'])
 def update_status(report_id):
-    if 'user_logged_in' not in session or session.get('role') != 'admin':
+    if 'admin_logged_in' not in session:
         abort(403)
 
     new_status = request.form.get('status')
