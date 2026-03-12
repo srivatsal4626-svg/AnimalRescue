@@ -47,17 +47,12 @@ def init_db():
     ''')
 
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS admin (
+        CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
+            username TEXT NOT NULL UNIQUE,
             password TEXT NOT NULL
         )
     ''')
-
-    cursor.execute('SELECT * FROM admin WHERE username = ?', ('admin',))
-    if not cursor.fetchone():
-        hashed_pw = generate_password_hash('admin123')
-        cursor.execute('INSERT INTO admin (username, password) VALUES (?, ?)', ('admin', hashed_pw))
 
     db.commit()
     db.close()
@@ -171,6 +166,28 @@ def donate():
     return render_template('donate.html')
 
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        db = get_db()
+        existing_user = db.execute('SELECT * FROM users WHERE username=?', (username,)).fetchone()
+        if existing_user:
+            flash('Username already exists. Please choose another.', 'danger')
+            return redirect(url_for('register'))
+
+        hashed_pw = generate_password_hash(password)
+        db.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, hashed_pw))
+        db.commit()
+
+        flash('Registration successful! You can now log in.', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -178,15 +195,13 @@ def login():
         password = request.form['password']
 
         db = get_db()
-        admin = db.execute(
-            'SELECT * FROM admin WHERE username=?',
-            (username,)
-        ).fetchone()
+        user = db.execute('SELECT * FROM users WHERE username=?', (username,)).fetchone()
 
-        if admin and check_password_hash(admin['password'], password):
-            session['admin_logged_in'] = True
+        if user and check_password_hash(user['password'], password):
+            session['user_logged_in'] = True
+            session['username'] = username
             flash('Logged in successfully!', 'success')
-            return redirect(url_for('admin'))
+            return redirect(url_for('index'))
 
         flash('Invalid username or password', 'danger')
 
@@ -195,60 +210,10 @@ def login():
 
 @app.route('/logout')
 def logout():
-    session.pop('admin_logged_in', None)
+    session.pop('user_logged_in', None)
+    session.pop('username', None)
     flash('Logged out successfully.', 'success')
     return redirect(url_for('login'))
-
-
-@app.route('/admin')
-def admin():
-    if 'admin_logged_in' not in session:
-        return redirect(url_for('login'))
-
-    db = get_db()
-
-    reports = db.execute(
-        'SELECT * FROM reports ORDER BY id DESC'
-    ).fetchall()
-
-    donations = db.execute(
-        'SELECT * FROM donations ORDER BY id DESC'
-    ).fetchall()
-
-    return render_template('admin.html', reports=reports, donations=donations)
-
-
-@app.route('/admin/delete_report/<int:report_id>', methods=['POST'])
-def delete_report(report_id):
-    if 'admin_logged_in' not in session:
-        abort(403)
-
-    db = get_db()
-    db.execute('DELETE FROM reports WHERE id=?', (report_id,))
-    db.commit()
-
-    flash('Report deleted.', 'success')
-    return redirect(url_for('admin'))
-
-
-@app.route('/admin/update_status/<int:report_id>', methods=['POST'])
-def update_status(report_id):
-    if 'admin_logged_in' not in session:
-        abort(403)
-
-    new_status = request.form.get('status')
-
-    if new_status in ['pending', 'rescued', 'adopted']:
-        db = get_db()
-        db.execute(
-            'UPDATE reports SET status=? WHERE id=?',
-            (new_status, report_id)
-        )
-        db.commit()
-
-        flash('Status updated.', 'success')
-
-    return redirect(url_for('admin'))
 
 
 @app.errorhandler(404)
