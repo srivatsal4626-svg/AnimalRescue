@@ -1,7 +1,6 @@
 import os
 import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, flash, session, g, abort
-from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_change_in_production'
@@ -46,24 +45,11 @@ def init_db():
         )
     ''')
 
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS admin (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            password TEXT NOT NULL
-        )
-    ''')
-
-    cursor.execute('SELECT * FROM admin WHERE username = ?', ('admin',))
-    if not cursor.fetchone():
-        hashed_pw = generate_password_hash('admin123')
-        cursor.execute('INSERT INTO admin (username, password) VALUES (?, ?)', ('admin', hashed_pw))
-
     db.commit()
     db.close()
 
 
-# Initialize database when app starts
+# Initialize database
 with app.app_context():
     init_db()
 
@@ -171,31 +157,24 @@ def donate():
     return render_template('donate.html')
 
 
+# LOGIN ROUTE (Modified: anyone can login)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
-        password = request.form['password']
 
-        db = get_db()
-        admin = db.execute(
-            'SELECT * FROM admin WHERE username=?',
-            (username,)
-        ).fetchone()
+        session['admin_logged_in'] = True
+        session['username'] = username
 
-        if admin and check_password_hash(admin['password'], password):
-            session['admin_logged_in'] = True
-            flash('Logged in successfully!', 'success')
-            return redirect(url_for('admin'))
-
-        flash('Invalid username or password', 'danger')
+        flash(f'Welcome {username}! Logged in successfully.', 'success')
+        return redirect(url_for('admin'))
 
     return render_template('login.html')
 
 
 @app.route('/logout')
 def logout():
-    session.pop('admin_logged_in', None)
+    session.clear()
     flash('Logged out successfully.', 'success')
     return redirect(url_for('login'))
 
