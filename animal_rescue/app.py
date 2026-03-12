@@ -54,9 +54,9 @@ def init_db():
         )
     ''')
 
-    cursor.execute('SELECT * FROM admin WHERE username = ?', ('admin',))
+    cursor.execute('SELECT * FROM admin WHERE username = ?', (' ',))
     if not cursor.fetchone():
-        hashed_pw = generate_password_hash('admin123')
+        hashed_pw = generate_password_hash('')
         cursor.execute('INSERT INTO admin (username, password) VALUES (?, ?)', ('admin', hashed_pw))
 
     db.commit()
