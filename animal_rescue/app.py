@@ -5,28 +5,8 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_change_in_production'
 
-# ✅ FIX: Use /tmp for Vercel, normal file for local
-if os.environ.get("VERCEL"):
-    DATABASE = "/tmp/database.db"
-else:
-    DATABASE = "database.db"
-
-
-# ---------------------------
-# Database Connection
-# ---------------------------
-def get_db():
-    if 'db' not in g:
-        g.db = sqlite3.connect(DATABASE)
-        g.db.row_factory = sqlite3.Row
-    return g.db
-
-
-@app.teardown_appcontext
-def close_connection(exception):
-    db = g.pop('db', None)
-    if db is not None:
-        db.close()
+# ✅ ALWAYS use /tmp for Vercel (writeable)
+DATABASE = "/tmp/database.db"
 
 
 # ---------------------------
@@ -59,8 +39,26 @@ def init_db():
     db.close()
 
 
-with app.app_context():
-    init_db()
+# ---------------------------
+# Database Connection (FIXED)
+# ---------------------------
+def get_db():
+    if 'db' not in g:
+        # ✅ recreate DB if missing (serverless fix)
+        if not os.path.exists(DATABASE):
+            init_db()
+
+        g.db = sqlite3.connect(DATABASE)
+        g.db.row_factory = sqlite3.Row
+
+    return g.db
+
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
 
 
 # ---------------------------
@@ -119,14 +117,13 @@ def report():
             )
             db.commit()
 
-            flash('Animal reported successfully! Our team will act shortly.', 'success')
+            flash('Animal reported successfully!', 'success')
             return redirect(url_for('report'))
 
         except Exception as e:
             import traceback
             traceback.print_exc()
-            flash("Something went wrong. Try again.", "danger")
-            return redirect(url_for('report'))
+            return "ERROR: " + str(e), 500
 
     return render_template('report.html')
 
@@ -162,7 +159,7 @@ def adopt_action(animal_id):
     db.execute('UPDATE reports SET status="adopted" WHERE id=?', (animal_id,))
     db.commit()
 
-    flash('Thank you for giving this animal a forever home!', 'success')
+    flash('Thank you for adopting!', 'success')
     return redirect(url_for('adopt'))
 
 
@@ -185,11 +182,11 @@ def donate():
             )
             db.commit()
 
-            flash('Thank you for your generous donation!', 'success')
+            flash('Thank you for your donation!', 'success')
             return redirect(url_for('donate'))
 
         except:
-            flash('Invalid amount.', 'danger')
+            flash('Invalid amount!', 'danger')
 
     return render_template('donate.html')
 
@@ -217,7 +214,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.clear()
-    flash('Logged out successfully.', 'success')
+    flash('Logged out!', 'success')
     return redirect(url_for('login'))
 
 
