@@ -4,23 +4,27 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_change_in_production'
-DATABASE = 'database.db'
+
+# ✅ FIX: Use /tmp for Vercel, normal file for local
+if os.environ.get("VERCEL"):
+    DATABASE = "/tmp/database.db"
+else:
+    DATABASE = "database.db"
 
 
 # ---------------------------
 # Database Connection
 # ---------------------------
 def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row
-    return db
+    if 'db' not in g:
+        g.db = sqlite3.connect(DATABASE)
+        g.db.row_factory = sqlite3.Row
+    return g.db
 
 
 @app.teardown_appcontext
 def close_connection(exception):
-    db = getattr(g, '_database', None)
+    db = g.pop('db', None)
     if db is not None:
         db.close()
 
@@ -92,26 +96,37 @@ def index():
 
 
 # ---------------------------
-# Report Animal
+# Report Animal (FIXED)
 # ---------------------------
 @app.route('/report', methods=['GET', 'POST'])
 def report():
     if request.method == 'POST':
+        try:
+            animal_type = request.form.get('animal_type')
+            location = request.form.get('location')
+            description = request.form.get('description')
+            contact = request.form.get('contact')
 
-        animal_type = request.form['animal_type']
-        location = request.form['location']
-        description = request.form['description']
-        contact = request.form['contact']
+            # ✅ validation
+            if not all([animal_type, location, description, contact]):
+                flash("All fields are required!", "danger")
+                return redirect(url_for('report'))
 
-        db = get_db()
-        db.execute(
-            'INSERT INTO reports (animal_type, location, description, contact, status) VALUES (?, ?, ?, ?, ?)',
-            (animal_type, location, description, contact, 'pending')
-        )
-        db.commit()
+            db = get_db()
+            db.execute(
+                'INSERT INTO reports (animal_type, location, description, contact, status) VALUES (?, ?, ?, ?, ?)',
+                (animal_type, location, description, contact, 'pending')
+            )
+            db.commit()
 
-        flash('Animal reported successfully! Our team will act shortly.', 'success')
-        return redirect(url_for('report'))
+            flash('Animal reported successfully! Our team will act shortly.', 'success')
+            return redirect(url_for('report'))
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            flash("Something went wrong. Try again.", "danger")
+            return redirect(url_for('report'))
 
     return render_template('report.html')
 
@@ -156,10 +171,9 @@ def adopt_action(animal_id):
 # ---------------------------
 @app.route('/donate', methods=['GET', 'POST'])
 def donate():
-
     if request.method == 'POST':
-        donor_name = request.form['donor_name']
-        amount = request.form['amount']
+        donor_name = request.form.get('donor_name')
+        amount = request.form.get('amount')
 
         try:
             amount = float(amount)
@@ -174,25 +188,24 @@ def donate():
             flash('Thank you for your generous donation!', 'success')
             return redirect(url_for('donate'))
 
-        except ValueError:
-            flash('Invalid amount. Please enter a valid number.', 'danger')
+        except:
+            flash('Invalid amount.', 'danger')
 
     return render_template('donate.html')
 
 
 # ---------------------------
-# LOGIN (ANY USERNAME WORKS)
+# Login
 # ---------------------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form.get('username')
 
         session['admin_logged_in'] = True
         session['username'] = username
 
-        flash(f'Welcome {username}! Logged in successfully.', 'success')
+        flash(f'Welcome {username}!', 'success')
         return redirect(url_for('admin'))
 
     return render_template('login.html')
@@ -213,7 +226,6 @@ def logout():
 # ---------------------------
 @app.route('/admin')
 def admin():
-
     if 'admin_logged_in' not in session:
         return redirect(url_for('login'))
 
@@ -235,7 +247,6 @@ def admin():
 # ---------------------------
 @app.route('/admin/delete_report/<int:report_id>', methods=['POST'])
 def delete_report(report_id):
-
     if 'admin_logged_in' not in session:
         abort(403)
 
@@ -252,14 +263,12 @@ def delete_report(report_id):
 # ---------------------------
 @app.route('/admin/update_status/<int:report_id>', methods=['POST'])
 def update_status(report_id):
-
     if 'admin_logged_in' not in session:
         abort(403)
 
     new_status = request.form.get('status')
 
     if new_status in ['pending', 'rescued', 'adopted']:
-
         db = get_db()
         db.execute(
             'UPDATE reports SET status=? WHERE id=?',
